@@ -1,4 +1,3 @@
-require 'sqlite3'
 require 'nokogiri'
 
 require "happy_importer/version"
