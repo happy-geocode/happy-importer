@@ -1,11 +1,11 @@
 # -*- encoding: utf-8 -*-
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'happy-importer/version'
+require 'happy_importer/version'
 
 Gem::Specification.new do |gem|
-  gem.name          = "happy-importer"
-  gem.version       = Happy::Importer::VERSION
+  gem.name          = "happy_importer"
+  gem.version       = HappyImporter::VERSION
   gem.authors       = ["Klaus Zanders"]
   gem.email         = ["klaus.zanders@gmail.com"]
   gem.description   = %q{Importer für die OSM Daten in die Arango DB}
@@ -19,5 +19,7 @@ Gem::Specification.new do |gem|
 
   gem.add_runtime_dependency 'sqlite3'
   gem.add_runtime_dependency 'ashikawa-ar'
+  gem.add_runtime_dependency 'nokogiri'
+
 
 end
