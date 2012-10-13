@@ -16,7 +16,7 @@ module HappyImporter
       setup_nodes_db
 
       # Shell out to osmosis to extract the nodes and store them in the sqlite
-      if !File.exist?('/tmp/osm-nodes.xml')
+      if File.exist?('/tmp/osm-nodes.xml')
         puts '[Extract Nodes] We already have the node extraction ... Skipping'
       else
         puts "[Extract Nodes] Osmosis is running to extract the nodes"
