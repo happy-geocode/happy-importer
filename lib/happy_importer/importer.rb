@@ -5,8 +5,9 @@ require 'JSON'
 module HappyImporter
   class Importer
 
-    def initialize(filename)
+    def initialize(filename, arango_host = nil)
       @filename = filename
+      @arango_host = arango_host
     end
 
     def self.check_osmosis
@@ -20,11 +21,15 @@ module HappyImporter
       setup_nodes_db
 
       # Shell out to osmosis to extract the nodes and store them in the sqlite
-      puts "[Extract Nodes] Osmosis is running to extract the nodes"
-      `osmosis --read-xml file="#{@filename}" --tag-filter reject-ways --tag-filter reject-relations --write-xml /tmp/osm-nodes.xml`
+      if File.exist?('/tmp/osm-nodes.xml')
+        puts '[Extract Nodes] We already have the node extraction ... Skipping'
+      else
+        puts "[Extract Nodes] Osmosis is running to extract the nodes"
+        `osmosis --read-xml file="#{@filename}" --tag-filter reject-ways --tag-filter reject-relations --write-xml /tmp/osm-nodes.xml`
+      end
 
       puts "[Extract Nodes] Now we are parsing the XML and putting everything in the sqlite db ... Please stand by (this might take a while)"
-      parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocument.new(sqlite_connection))
+      parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocument.new(arango_connection))
       parser.parse File.open('/tmp/osm-nodes.xml', 'r')
 
       puts '[Extract Nodes] Deleting the temporary files!'
@@ -51,6 +56,9 @@ module HappyImporter
     def extract_states
       puts "[Extract States] Osmosis is running to extract the states from the temporary borders file"
       `osmosis --read-xml file=/tmp/osm-borders.xml --tag-filter reject-nodes --tag-filter accept-relations admin_level=4 --tag-filter accept-ways admin_level=4 --write-xml /tmp/osm-states.xml`
+
+      puts "[Extract States] Osmosis is done ... Now we parse the XML"
+
     end
 
     def extract_cities
@@ -92,13 +100,12 @@ module HappyImporter
     end
 
     private
-    def sqlite_connection
-      @db ||= ::SQLite3::Database.new('/tmp/nodes.sqlite3')
-    end
-
-    def setup_nodes_db
-      sqlite_connection.execute "CREATE TABLE IF NOT EXISTS osm_nodes(id INTEGER PRIMARY KEY, lat DOUBLE, lon DOUBLE)"
-      sqlite_connection.execute "DELETE FROM osm_nodes"
+    def arango_connection
+      if @arango_host
+        @arango ||= ::Ashikawa::Core::Database.new @arango_host
+      else
+        nil
+      end
     end
 
     def bundesland_for_plz(plz)
