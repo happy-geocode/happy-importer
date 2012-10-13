@@ -46,7 +46,7 @@ class Polygon
 
   def radius
     center = centroid
-    @points.map{|point| distance(point, center)}.sort.first
+    @points.map{|point| distance(point, center)}.sort.reverse.first
   end
 
   private
