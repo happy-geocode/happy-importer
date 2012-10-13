@@ -13,4 +13,18 @@ namespace :import do
       import.extract_nodes
     end
   end
+
+  desc 'Import the zip codes for germany and their shapes'
+  task :plz do
+    file = ENV['IMPORT']
+    if !file
+      puts "Usage: rake import:plz IMPORT=<PLZ.sql>"
+      puts "       the PLZ.sql File can be downloaded here:"
+      puts "       http://sourceforge.net/projects/mapbender/files/Data/PLZ/plz.zip/download"
+    else
+      puts "Extracting plz from #{file}"
+      import = HappyImporter::Importer.new(file)
+      import.extract_plz_codes
+    end
+  end
 end

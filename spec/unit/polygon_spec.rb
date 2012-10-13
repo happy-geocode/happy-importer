@@ -36,6 +36,6 @@ describe "polygon should work as accepted" do
   end
 
   it "should calculate the minimum radius for a circle around all points in the polygon" do
-    @polygon.radius.should eq(768125.6068241255)
+    @polygon.radius.should eq(776860.1575429044)
   end
 end
