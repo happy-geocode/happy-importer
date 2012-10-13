@@ -14,8 +14,6 @@ module HappyImporter
 
     # This function extracts the nodes from the OSM XML file and stores them in the sqlite database
     def extract_nodes
-      setup_nodes_db
-
       # Shell out to osmosis to extract the nodes and store them in the sqlite
       if File.exist?('/tmp/osm-nodes.xml')
         puts '[Extract Nodes] We already have the node extraction ... Skipping'
@@ -24,9 +22,13 @@ module HappyImporter
         `osmosis --read-xml file="#{@filename}" --tag-filter reject-ways --tag-filter reject-relations --write-xml /tmp/osm-nodes.xml`
       end
 
-      puts "[Extract Nodes] Now we are parsing the XML and putting everything in the sqlite db ... Please stand by (this might take a while)"
-      parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocument.new(arango_connection))
+      puts "[Extract Nodes] Now we are parsing the XML and putting everything into a CSV file ... Please stand by (this might take a while)"
+      f = File.open('/tmp/temp-nodes.csv', 'w')
+      parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocument.new(f))
       parser.parse File.open('/tmp/osm-nodes.xml', 'r')
+      f.close
+
+      # Do the arangoimport magic here ... We do this manually for now
 
       puts '[Extract Nodes] Deleting the temporary files!'
 
