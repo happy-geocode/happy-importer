@@ -1,5 +1,5 @@
 require 'nokogiri'
-require 'ashikawa'
+require 'ashikawa-core'
 
 require "happy_importer/version"
 require "happy_importer/importer"
