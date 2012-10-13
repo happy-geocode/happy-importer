@@ -1,8 +1,9 @@
 module HappyImporter
   class Importer
 
-    def initialize(filename)
+    def initialize(filename, arango_host = nil)
       @filename = filename
+      @arango_host
     end
 
     def self.check_osmosis
@@ -63,6 +64,14 @@ module HappyImporter
     end
 
     private
+    def arango_connection
+      if @arango_host
+        @arango ||= ::Ashikawa::Core::Database.new @arango_host
+      else
+        nil
+      end
+    end
+
     def sqlite_connection
       @db ||= ::SQLite3::Database.new('/tmp/nodes.sqlite3')
     end
