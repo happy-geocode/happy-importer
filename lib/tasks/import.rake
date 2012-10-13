@@ -6,7 +6,7 @@ namespace :import do
     file = ENV['IMPORT']
 
     if !file
-      puts "Usage: rake osmosis:nodes IMPORT=<YOUR_OSM_XML_FILE.osm>"
+      puts "Usage: rake import:nodes IMPORT=<YOUR_OSM_XML_FILE.osm>"
     else
       puts "Extracting nodes from #{file}"
       import = HappyImporter::Importer.new(file)

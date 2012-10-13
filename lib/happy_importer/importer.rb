@@ -16,8 +16,12 @@ module HappyImporter
       setup_nodes_db
 
       # Shell out to osmosis to extract the nodes and store them in the sqlite
-      puts "[Extract Nodes] Osmosis is running to extract the nodes"
-      `osmosis --read-xml file="#{@filename}" --tag-filter reject-ways --tag-filter reject-relations --write-xml /tmp/osm-nodes.xml`
+      if !File.exist?('/tmp/osm-nodes.xml')
+        puts '[Extract Nodes] We already have the node extraction ... Skipping'
+      else
+        puts "[Extract Nodes] Osmosis is running to extract the nodes"
+        `osmosis --read-xml file="#{@filename}" --tag-filter reject-ways --tag-filter reject-relations --write-xml /tmp/osm-nodes.xml`
+      end
 
       puts "[Extract Nodes] Now we are parsing the XML and putting everything in the sqlite db ... Please stand by (this might take a while)"
       parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocument.new(sqlite_connection))
