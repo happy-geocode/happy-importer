@@ -1,28 +1,16 @@
 require 'happy_importer'
 
 namespace :import do
-  desc 'Imports the nodes from a .osm file and puts them in a DB'
-  task :nodes do
+  desc 'Imports everything from an OSM file ... yeah!'
+  task :osm do
     file = ENV['IMPORT']
 
     if !file
-      puts "Usage: rake import:nodes IMPORT=<YOUR_OSM_XML_FILE.osm>"
+      puts "Usage: rake import:nodes IMPORT=<YOUR_OSM_XML_FILE.osm> PLZ=<PLZ.sql>"
     else
-      puts "Extracting nodes from #{file}"
+      puts "=============================== Extraction of #{file}"
       import = HappyImporter::Importer::OsmosisImport.new(file)
       import.extract_nodes
-    end
-  end
-
-  desc 'Imports the streets'
-  task :streets do
-    file = ENV['IMPORT']
-
-    if !file
-      puts "Usage: rake import:streets IMPORT=<YOUR_OSM_XML_FILE.osm>"
-    else
-      puts "Extracting streets from #{file}"
-      import = HappyImporter::Importer::OsmosisImport.new(file)
       import.extract_streets
     end
   end

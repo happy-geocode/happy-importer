@@ -6,9 +6,9 @@ module HappyImporter
   module Importer
     class OsmosisImport
 
-      def initialize(filename, arango_host = nil)
+      def initialize(filename)
         @filename = filename
-        @arango_host = arango_host
+        @nodes = nil
       end
 
       def self.check_osmosis
@@ -27,13 +27,19 @@ module HappyImporter
           `osmosis --read-xml file="#{@filename}" --tag-filter reject-ways --tag-filter reject-relations --write-xml /tmp/osm-nodes.xml`
         end
 
-        puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into a CSV file ... Please stand by (this might take a while)"
-        f = File.open('/tmp/temp-nodes.csv', 'w')
-        parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocument.new(f))
-        parser.parse File.open('/tmp/osm-nodes.xml', 'r')
-        f.close
+        # puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into a CSV file ... Please stand by (this might take a while)"
+        # f = File.open('/tmp/temp-nodes.csv', 'w')
+        # parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocumentCsv.new(f))
+        # parser.parse File.open('/tmp/osm-nodes.xml', 'r')
+        # f.close
 
-        puts "#{Time.new} [Extract Nodes] Pushing all the stuff into the ArangoDB"
+        puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into memory"
+        doc = Document::NodeDocument.new
+        parser = ::Nokogiri::XML::SAX::Parser.new doc
+        parser.parse File.open('/tmp/osm-nodes.xml', 'r')
+        @nodes = doc.nodes
+
+        #puts "#{Time.new} [Extract Nodes] Pushing all the stuff into the ArangoDB"
         # echo 'db._create("locations", { journalSize: 200000000 })'|arangosh
         # arangoimp --collection locations --create-collection true --connect-timeout 60 --log.level debug --max-upload-size 1000000 --type csv --separator ';' rails-nodes.csv
 
@@ -44,18 +50,19 @@ module HappyImporter
       end
 
       def extract_streets
-        # if File.exist?('/tmp/osm-streets.xml')
-        #  puts "#{Time.new} [Extract Streets] We already have the streets ... Skipping"
-        # else
-        #   puts "#{Time.new} [Extract Streets] Osmosis is running to extract the streets"
-        #   `osmosis --read-xml file="#{filename}" --tag-filter reject-nodes --way-key keyList=highway --tag-filter accept-ways name="*" --tag-filter reject-relations --write-xml /tmp/osm-streets.xml`
-        # end
+         if File.exist?('/tmp/osm-streets.xml')
+          puts "#{Time.new} [Extract Streets] We already have the streets ... Skipping"
+         else
+           puts "#{Time.new} [Extract Streets] Osmosis is running to extract the streets"
+           `osmosis --read-xml file="#{filename}" --tag-filter reject-nodes --way-key keyList=highway --tag-filter accept-ways name="*" --tag-filter reject-relations --write-xml /tmp/osm-streets.xml`
+         end
 
         puts "#{Time.new} [Extract Streets] The parser is starting to parse the streets"
         doc = Document::OsmStreetsDocument.new
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
-        parser.parse File.open('/tmp/osm/koeln-strassen.osm') # TODO: Ue the right temp file here
+        #parser.parse File.open('/tmp/osm/koeln-strassen.osm') # TODO: Ue the right temp file here
 
+        parser.parse File.open('/tmp/osm-streets.xml')
         puts "#{Time.new} [Extract Streets] The parser is done with the streets osm ... No we have to connect the streets that belong together"
 
         # Let's iterate over the node<->street associations
@@ -66,15 +73,18 @@ module HappyImporter
             array.each do |streetA|
               array.each do |streetB|
                 if streetA != streetB
-                  doc.streets[streetA][:refs] << streetB if doc.streets[streetA][:name] == doc.streets[streetB][:name]
-                  doc.streets[streetA][:refs].uniq!
+                  doc.streets[streetA][:other_part_refs] << streetB if doc.streets[streetA][:name] == doc.streets[streetB][:name]
+                  doc.streets[streetA][:other_part_refs].uniq!
                 end
               end
             end
           end
         end
 
-        puts "#{Time.new} [Extract Streets] Done with the connection ... Saving everything"
+        puts "#{Time.new} [Extract Streets] Done with the connection ... Saving to /tmp/osm-streets.json"
+        File.open('/tmp/osm-streets.json','w') do |f|
+          f.puts (doc.streets.to_json)
+        end
         puts "#{Time.new} [Extract Streets] Done!"
       end
 
@@ -133,6 +143,10 @@ module HappyImporter
           puts "[Cleanup] #{file}"
           File.delete(file) if File.exist? file
         end
+
+        # Drop the temporary ArangoDB collection
+        puts "[Cleanup] Dropping the ArangoDB Collection"
+        `echo 'db._drop("locations")'|arangosh`
       end
     end
   end
