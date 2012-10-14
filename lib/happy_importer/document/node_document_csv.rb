@@ -14,7 +14,7 @@ module HappyImporter
           when 'node'
             @file.puts "#{attributes['id'].to_i};#{attributes['lat'].to_f};#{attributes['lon'].to_f}"
             @node_count += 1
-            puts @node_count if @node_count % 10000 == 0
+            puts @node_count if @node_count % 1_000_000 == 0
         end
       end
 

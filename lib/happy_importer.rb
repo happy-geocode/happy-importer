@@ -1,6 +1,7 @@
 require 'nokogiri'
 require 'ashikawa-core'
 require 'parsec/core_ext/string'
+require 'mysql2'
 
 require "happy_importer/version"
 require "happy_importer/importer"

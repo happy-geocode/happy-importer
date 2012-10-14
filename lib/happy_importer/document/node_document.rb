@@ -5,7 +5,7 @@ module HappyImporter
       attr_reader :nodes
 
       def initialize
-        @nodes = {}
+        @nodes = Hash.new
         @node_count = 0
       end
 
@@ -15,7 +15,7 @@ module HappyImporter
           when 'node'
             @nodes[attributes['id']] = { lat: attributes['lat'].to_f, lon: attributes['lon'].to_f }
             @node_count += 1
-            puts "#{Time.new} [Reading nodes to memory] #{@node_count}" if @node_count % 100000 == 0
+            puts "#{Time.new} [Reading nodes to memory] #{@node_count}" if @node_count % 1000000 == 0
         end
       end
 

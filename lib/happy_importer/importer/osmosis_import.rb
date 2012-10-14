@@ -9,6 +9,7 @@ module HappyImporter
       def initialize(filename)
         @filename = filename
         @nodes = nil
+        @mysql = Mysql2::Client.new(host: "localhost", username: "osm", password: "osm", database: "osm_nodes")
       end
 
       def self.check_osmosis
@@ -33,11 +34,13 @@ module HappyImporter
         # parser.parse File.open('/tmp/osm-nodes.xml', 'r')
         # f.close
 
-        puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into memory"
-        doc = Document::NodeDocument.new
-        parser = ::Nokogiri::XML::SAX::Parser.new doc
-        parser.parse File.open('/tmp/osm-nodes.xml', 'r')
-        @nodes = doc.nodes
+        puts "#{Time.new} [Extract Nodes] Everything should be in the database by now ..."
+
+        # puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into memory"
+        # doc = Document::NodeDocument.new
+        # parser = ::Nokogiri::XML::SAX::Parser.new doc
+        # parser.parse File.open('/tmp/osm-nodes.xml', 'r')
+        # @nodes = doc.nodes
 
         #puts "#{Time.new} [Extract Nodes] Pushing all the stuff into the ArangoDB"
         # echo 'db._create("locations", { journalSize: 200000000 })'|arangosh
@@ -58,7 +61,7 @@ module HappyImporter
          end
 
         puts "#{Time.new} [Extract Streets] The parser is starting to parse the streets"
-        doc = Document::OsmStreetsDocument.new
+        doc = Document::OsmStreetsDocument.new(@mysql)
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
         #parser.parse File.open('/tmp/osm/koeln-strassen.osm') # TODO: Ue the right temp file here
 

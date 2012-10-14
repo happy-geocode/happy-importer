@@ -4,9 +4,9 @@ module HappyImporter
 
       attr_reader :streets, :nodes
 
-      def initialize(node_coords)
-        @node_coords = node_coords
+      def initialize(mysql)
         @streets = {}
+        @mysql = mysql
         @nodes = {}
         @current_street = nil
       end
@@ -19,7 +19,8 @@ module HappyImporter
             @current_street = attributes['id']
             @streets[@current_street] = { points: [], name: nil, name_normalized: nil, other_part_refs: [] }
           when 'nd'
-            @streets[@current_street][:points] << node_coords[attributes['ref']]
+            result = mysql.query("SELECT lat, lon FROM nodes WHERE id='#{attributes['ref']}'").first
+            @streets[@current_street][:points] << { lat: result['lat'], lon: result['lon'] }
 
             @nodes[attributes['ref']] ||= []
             @nodes[attributes['ref']] << @current_street
