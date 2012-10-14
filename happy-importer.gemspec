@@ -6,8 +6,8 @@ require 'happy_importer/version'
 Gem::Specification.new do |gem|
   gem.name          = "happy_importer"
   gem.version       = HappyImporter::VERSION
-  gem.authors       = ["Klaus Zanders"]
-  gem.email         = ["klaus.zanders@gmail.com"]
+  gem.authors       = ["Klaus Zanders", "Bodo Tasche"]
+  gem.email         = ["klaus.zanders@gmail.com", "bodo@wannawork.de"]
   gem.description   = %q{Importer für die OSM Daten in die Arango DB}
   gem.summary       = %q{Importer für die OSM Daten in die Arango DB}
   gem.homepage      = ""
