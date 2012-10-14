@@ -51,7 +51,7 @@ module HappyImporter
         @osm_type = osm_type
       end
 
-      def extract_osm
+      def extract_osm(nodes = {})
         doc = Document::OsmBordersDocument.new
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
         parser.parse File.open(@filename, 'r')
@@ -61,7 +61,7 @@ module HappyImporter
             poly = Polygon.new
             unless relation[:ways].nil?
               relation[:ways].each do |way|
-                poly.points += points_from_way doc.ways[way]
+                poly.points += points_from_way doc.ways[way], nodes
               end
             end
 
@@ -78,7 +78,7 @@ module HappyImporter
                   state_ref: BUNDESLAND_REFS[BUNDESLAENDER.index(state_name)],
                   center: {
                     lat: center.lat,
-                    long: center.long
+                    lon: center.lon
                   },
                   radius: poly.radius
                 }
@@ -94,7 +94,7 @@ module HappyImporter
                 country_name: "DE",
                 center: {
                   lat: center.lat,
-                  long: center.long
+                  lon: center.lon
                 },
                 radius: poly.radius
               }
@@ -108,19 +108,22 @@ module HappyImporter
         tags["nat_name:de"] || tags["name:de"] || tags["nat_name"] || tags["name"]
       end
 
-      def points_from_way(way)
+      def points_from_way(way, nodes)
         return [] if way.nil?
         points = []
 
-        # Dummy Daten
-        points << OpenStruct.new(lat: 0, long: 0)
-        points << OpenStruct.new(lat: 0, long: 1)
-        points << OpenStruct.new(lat: 1, long: 1)
-
-        # Hier aus einem ND ref ein Lat/Long holen
-        #way[:points].each do |nd_ref|
-          #points << OpenStruct.new(lat: 0, long:0)
-        #end
+        if nodes.empty?
+          # Dummy Daten
+          points << OpenStruct.new(lat: 0, lon: 0)
+          points << OpenStruct.new(lat: 0, lon: 1)
+          points << OpenStruct.new(lat: 1, lon: 1)
+        else
+          # Hier aus einem ND ref ein Lat/lon holen
+          way[:points].each do |nd_ref|
+            point = nodes[nd_ref]
+            points << OpenStruct.new(lat: point[:lat], lon:point[:lon]) if point
+          end
+        end
 
         points
       end
