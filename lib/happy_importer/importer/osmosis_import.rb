@@ -9,7 +9,9 @@ module HappyImporter
       def initialize(filename)
         @filename = filename
         @nodes = nil
-        @mysql = Mysql2::Client.new(host: "192.168.173.82", username: "osm", password: "osm", database: "osm_nodes")
+
+        # Connection to ArangoDB through Ashikawa-Core
+        @arango = Ashikawa::Core::Database.new("http://localhost:8529")
       end
 
       def self.check_osmosis
@@ -55,6 +57,8 @@ module HappyImporter
         f.close
 
         puts "#{Time.new} [Extract Nodes] Importing all the stuff into the ArangoDB"
+        # Drop the collection
+        `echo 'db._drop("locations")'|arangosh`
         # We need to increase the journal size (standard ~30mb) otherwise the machine will break when importing Germany
         `echo 'db._create("locations", { journalSize: 200000000 })'|arangosh`
         `arangoimp --collection locations --create-collection true --connect-timeout 60 --log.level debug --max-upload-size 1000000 --type csv --separator ';' /tmp/temp-nodes.csv`
@@ -134,7 +138,7 @@ module HappyImporter
           puts "#{Time.new} [Extract States] Osmosis is done ... Now we parse the XML"
         end
         import = HappyImporter::Importer::OsmImport.new("/tmp/osm-states.xml", "state")
-        import.extract_osm(@mysql)
+        import.extract_osm(@arango)
         puts "#{Time.new} [Extract States] Done!"
       end
 
@@ -147,9 +151,9 @@ module HappyImporter
           `osmosis --read-xml file=/tmp/osm-borders.xml --tag-filter reject-nodes --tag-filter accept-relations admin_level=6 --tag-filter accept-ways admin_level=6 --write-xml /tmp/osm-big-cities.xml`
         end
         import = HappyImporter::Importer::OsmImport.new("/tmp/osm-cities.xml", "city")
-        import.extract_osm(@mysql)
+        import.extract_osm(@arango)
         import = HappyImporter::Importer::OsmImport.new("/tmp/osm-big-cities.xml", "city", true)
-        import.extract_osm(@mysql)
+        import.extract_osm(@arango)
         puts "#{Time.new} [Extract Cities] Done!"
       end
 

@@ -52,7 +52,7 @@ module HappyImporter
         @check_for_city = check_for_city
       end
 
-      def extract_osm(mysql)
+      def extract_osm(arango)
         doc = Document::OsmBordersDocument.new
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
         parser.parse File.open(@filename, 'r')
@@ -62,7 +62,7 @@ module HappyImporter
             poly = Polygon.new
             unless relation[:ways].nil?
               relation[:ways].each do |way|
-                poly.points += points_from_way doc.ways[way], mysql
+                poly.points += points_from_way doc.ways[way], arango
               end
             end
 
@@ -110,18 +110,18 @@ module HappyImporter
         tags["nat_name:de"] || tags["name:de"] || tags["nat_name"] || tags["name"]
       end
 
-      def points_from_way(way, mysql)
+      def points_from_way(way, arango)
         return [] if way.nil?
         points = []
 
-        if mysql.nil?
-          # Dummy Daten
+        if arango.nil?
+          # Dummy Data
           points << OpenStruct.new(lat: 0, lon: 0)
           points << OpenStruct.new(lat: 0, lon: 1)
           points << OpenStruct.new(lat: 1, lon: 1)
         else
-          # Hier aus einem ND ref ein Lat/lon holen
-          result = mysql.query("SELECT lat, lon FROM nodes WHERE id in (#{way[:points].join(", ")})")
+          # Get the lat/lon from the arango db
+          result = @arango.query("FOR i IN locations FILTER i.osm_id IN [#{way[:points].join(", ")}] RETURN i")
           result.each do |line|
             points << OpenStruct.new(lat: line["lat"], lon: line["lon"])
           end
