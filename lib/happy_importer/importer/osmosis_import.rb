@@ -4,7 +4,7 @@ require 'JSON'
 
 module HappyImporter
   module Importer
-    class OsmosisImporter
+    class OsmosisImport
 
       def initialize(filename, arango_host = nil)
         @filename = filename
@@ -21,31 +21,60 @@ module HappyImporter
       def extract_nodes
         # Shell out to osmosis to extract the nodes and store them in the sqlite
         if File.exist?('/tmp/osm-nodes.xml')
-          puts '[Extract Nodes] We already have the node extraction ... Skipping'
+          puts "#{Time.new} [Extract Nodes] We already have the node extraction ... Skipping"
         else
-          puts "[Extract Nodes] Osmosis is running to extract the nodes"
+          puts "#{Time.new} [Extract Nodes] Osmosis is running to extract the nodes"
           `osmosis --read-xml file="#{@filename}" --tag-filter reject-ways --tag-filter reject-relations --write-xml /tmp/osm-nodes.xml`
         end
 
-        puts "[Extract Nodes] Now we are parsing the XML and putting everything into a CSV file ... Please stand by (this might take a while)"
+        puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into a CSV file ... Please stand by (this might take a while)"
         f = File.open('/tmp/temp-nodes.csv', 'w')
         parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocument.new(f))
         parser.parse File.open('/tmp/osm-nodes.xml', 'r')
         f.close
 
-        # Do the arangoimport magic here ... We do this manually for now
+        puts "#{Time.new} [Extract Nodes] Pushing all the stuff into the ArangoDB"
+        # echo 'db._create("locations", { journalSize: 200000000 })'|arangosh
+        # arangoimp --collection locations --create-collection true --connect-timeout 60 --log.level debug --max-upload-size 1000000 --type csv --separator ';' rails-nodes.csv
 
+        # Create the index
 
-        puts '[Extract Nodes] done!'
+        puts "#{Time.new} [Extract Nodes] We are done ... Now we can use arango to get the nodes"
+
       end
 
       def extract_streets
-        if File.exist?('/tmp/osm-streets.xml')
-          puts '[Extract Streets] We already have the streets ... Skipping'
-        else
-          puts "[Extract Streets] Osmosis is running to extract the streets"
-          `osmosis --read-xml file="#{filename}" --tag-filter reject-nodes --way-key keyList=highway --tag-filter accept-ways name="*" --tag-filter reject-relations --write-xml /tmp/osm-streets.xml`
+        # if File.exist?('/tmp/osm-streets.xml')
+        #   puts "#{Time.new} [Extract Streets] We already have the streets ... Skipping"
+        # else
+        #   puts "#{Time.new} [Extract Streets] Osmosis is running to extract the streets"
+        #   `osmosis --read-xml file="#{filename}" --tag-filter reject-nodes --way-key keyList=highway --tag-filter accept-ways name="*" --tag-filter reject-relations --write-xml /tmp/osm-streets.xml`
+        # end
+
+        puts "#{Time.new} [Extract Streets] The parser is starting to parse the streets"
+        doc = Document::OsmStreetsDocument.new
+        parser = ::Nokogiri::XML::SAX::Parser.new(doc)
+        parser.parse File.open('/tmp/osm/koeln-strassen.osm')
+
+        puts "#{Time.new} [Extract Streets] The parser is done with the streets osm ... No we have to connect the streets that belong together"
+
+        # Let's iterate over the node<->street associations
+        # When we find a node that belongs to more than one street and the streets have the same ids, let's connect them
+
+        doc.nodes.each do |key, array|
+          if array.size > 1
+            array.each do |streetA|
+              array.each do |streetB|
+                if streetA != streetB
+                  doc.streets[streetA][:refs] << streetB if doc.streets[streetA][:name] == doc.streets[streetB][:name]
+                  doc.streets[streetA][:refs].uniq!
+                end
+              end
+            end
+          end
         end
+
+        puts "#{Time.new} [Extract Streets] Done with the connection ... Saving everything"
       end
 
       def extract_house_numbers
