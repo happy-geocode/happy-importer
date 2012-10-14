@@ -20,6 +20,7 @@ Gem::Specification.new do |gem|
   gem.add_runtime_dependency 'ashikawa-core'
   gem.add_runtime_dependency 'nokogiri'
   gem.add_runtime_dependency 'parsec'
+  gem.add_runtime_dependency 'mysql2'
 
   gem.add_development_dependency "rspec", "~> 2.11.0"
 end
