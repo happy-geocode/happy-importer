@@ -27,6 +27,7 @@ module HappyImporter
         "Thüringen"
       ]
 
+      # OSM Refs for the german states
       BUNDESLAND_REFS = [
         "51529",
         "62782",
@@ -52,6 +53,9 @@ module HappyImporter
         @check_for_city = check_for_city
       end
 
+      # This function extracts the city or state data from the
+      # OSM XML File and stores them in a json file. That
+      # file is later imported in the target arango db
       def extract_osm(arango)
         doc = Document::OsmBordersDocument.new
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
@@ -106,10 +110,14 @@ module HappyImporter
         end
       end
 
+      # Get the correct name for the relation, german names first
       def name_from_relation(tags)
         tags["nat_name:de"] || tags["name:de"] || tags["nat_name"] || tags["name"]
       end
 
+      # in the osm we have the node ref. We
+      # need to get the real lat/lon points from
+      # the arango db
       def points_from_way(way, arango)
         return [] if way.nil?
         points = []
