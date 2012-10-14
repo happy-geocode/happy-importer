@@ -8,7 +8,7 @@ module HappyImporter
 
       # Importiert deutsche PLZ in die Zip-Tabelle
       def extract_plz_codes
-        File.open("zip.json", "w") do |output|
+        File.open("/tmp/import-zip.json", "w") do |output|
           File.open(@filename, encoding:"iso-8859-15").each_line{ |s|
             match = s.encode("utf-8").match(/INSERT INTO post_code_areas VALUES \(\d*, *'([^']*)', \d*, '([^']*)', 'SRID=[^;]*;MULTIPOLYGON\(\(\((.*)\)\)\)'\);/m)
             if match
@@ -43,7 +43,7 @@ module HappyImporter
 
       def bundesland_for_plz(plz)
         unless @bundesland_file
-          @bundesland_file = JSON.parse(File.read(File.expand_path("../german_plz_state.json", __FILE__)))
+          @bundesland_file = JSON.parse(File.read(File.expand_path("../../../../data/german_plz_state.json", __FILE__)))
           @bundesland_file.each do |line|
             line["start"] = line["start"].to_i
             line["end"]   = line["end"].to_i
