@@ -71,7 +71,7 @@ module HappyImporter
               state_name = state_for_regionalschluessel(relation[:tags]["de:regionalschluessel"])
               if !state_name.nil? && !poly.points.empty? && (!@check_for_city || relation[:tags]["de:place"] == "city")
                 entry = {
-                  id: key,
+                  osm_id: key,
                   name: name,
                   name_normalized: name.normalize_for_parsec,
                   country_ref: nil,
@@ -89,7 +89,7 @@ module HappyImporter
             elsif @osm_type == "state" && BUNDESLAENDER.include?(name) && !poly.points.empty?
               center = poly.centroid
               entry = {
-                id: key,
+                osm_id: key,
                 name: name,
                 name_normalized: name.normalize_for_parsec,
                 country_ref: nil,
