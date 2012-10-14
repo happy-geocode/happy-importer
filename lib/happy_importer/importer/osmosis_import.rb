@@ -76,6 +76,8 @@ module HappyImporter
           puts '[Extract States] Exrtracting the state borders from the temporary borders file"'
           `osmosis --read-xml file=/tmp/osm-borders.xml --tag-filter reject-nodes --tag-filter accept-relations admin_level=4 --tag-filter accept-ways admin_level=4 --write-xml /tmp/osm-states.xml`
           puts '[Extract States] Osmosis is done ... Now we parse the XML'
+          import = HappyImporter::Importer::OsmImport.new("/tmp/osm-states.xml", "state")
+          import.extract_osm
         end
       end
 
@@ -85,6 +87,8 @@ module HappyImporter
         else
           puts "[Extract Cities] Osmosis is running to extract the city borders from the temporary borders file"
           `osmosis --read-xml file=/tmp/osm-borders.xml --tag-filter reject-nodes --tag-filter accept-relations admin_level=8 --tag-filter accept-ways admin_level=8 --write-xml /tmp/osm-cities.xml`
+          import = HappyImporter::Importer::OsmImport.new("/tmp/osm-cities.xml", "city")
+          import.extract_osm
         end
       end
 
