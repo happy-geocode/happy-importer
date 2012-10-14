@@ -33,9 +33,9 @@ namespace :import do
     file = ENV['IMPORT']
     osm_type = ENV['OSM_TYPE']
     if !file || !osm_type
-      puts "Usage: rake import:reduced_osm IMPORT=<PLZ.sql> OSM_TYPE=<state|city>"
+      puts "Usage: rake import:reduced_osm IMPORT=<osm-cities.xml> OSM_TYPE=<state|city>"
     else
-      puts "Extracting plz from #{file}"
+      puts "Extracting #{osm_type} from #{file}"
       import = HappyImporter::Importer::OsmImport.new(file, osm_type)
       import.extract_osm
     end
