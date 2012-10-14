@@ -30,8 +30,6 @@ module HappyImporter
         @osm_type = osm_type
       end
 
-      # Fragen:
-      # 2. Leider gibt es 44 Länder in der Datei, ohne Land-Bezeichnung :(
       def extract_osm
         doc = Document::OsmBordersDocument.new
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
