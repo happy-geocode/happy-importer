@@ -38,4 +38,19 @@ describe "polygon should work as accepted" do
   it "should calculate the minimum radius for a circle around all points in the polygon" do
     @polygon.radius.should eq(776860.1575429044)
   end
+
+  it "should calculate the bounding box" do
+    @polygon.bounding_box.should eq([OpenStruct.new(lat:10, long:10), OpenStruct.new(lat:20, long:20)])
+  end
+
+  it "should check if point is outside bounding box" do
+    @polygon.outside_bounding_box?(OpenStruct.new(lat: 100, long: 100)).should eq(true)
+    @polygon.outside_bounding_box?(OpenStruct.new(lat: 14,  long: 14)).should eq(false)
+  end
+
+  it "should check if point is inside of polygon" do
+    @polygon.contains_point?(OpenStruct.new(lat: 100, long: 100)).should eq(false)
+    @polygon.contains_point?(OpenStruct.new(lat: 11, long: 11)).should eq(true)
+    @polygon.contains_point?(OpenStruct.new(lat: 10, long: 10)).should eq(true)
+  end
 end
