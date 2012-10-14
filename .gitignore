@@ -15,6 +15,5 @@ spec/reports
 test/tmp
 test/version_tmp
 tmp
-zip.json
-city.json
-state.json
+*.json
+*.osm
