@@ -27,6 +27,25 @@ module HappyImporter
         "Thüringen"
       ]
 
+      BUNDESLAND_REFS = [
+        "51529",
+        "62782",
+        "62771",
+        "62718",
+        "62761",
+        "62650",
+        "62341",
+        "62611",
+        "2145268",
+        "62372",
+        "62422",
+        "62504",
+        "28322",
+        "62467",
+        "62607",
+        "62366"
+      ]
+
       def initialize(filename, osm_type)
         @filename = filename
         @osm_type = osm_type
@@ -37,7 +56,7 @@ module HappyImporter
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
         parser.parse File.open(@filename, 'r')
         File.open("#{@osm_type}.json", "w") do |output|
-          doc.relations.values.each do |relation|
+          doc.relations.each do |key, relation|
             name = name_from_relation(relation[:tags])
             poly = Polygon.new
             unless relation[:ways].nil?
@@ -48,23 +67,29 @@ module HappyImporter
 
             if @osm_type == "city"
               center = poly.centroid
-              entry = {
-                name: name,
-                country_ref: nil,
-                country_name: "DE",
-                state_name: state_for_regionalschluessel(relation[:tags]["de:regionalschluessel"]),
-                state_ref: nil,
-                center: {
-                  lat: center.lat,
-                  long: center.long
-                },
-                radius: poly.radius
-              }
-              output.puts(entry.to_json) unless entry[:state_name].nil?
+              state_name = state_for_regionalschluessel(relation[:tags]["de:regionalschluessel"])
+              if !state_name.nil? && !poly.points.empty?
+                entry = {
+                  name: name,
+                  name_normalized: name.normalize_for_parsec,
+                  country_ref: nil,
+                  country_name: "DE",
+                  state_name: state_name,
+                  state_ref: BUNDESLAND_REFS[BUNDESLAENDER.index(state_name)],
+                  center: {
+                    lat: center.lat,
+                    long: center.long
+                  },
+                  radius: poly.radius
+                }
+                output.puts(entry.to_json)
+              end
             elsif @osm_type == "state" && BUNDESLAENDER.include?(name)
               center = poly.centroid
               entry = {
+                osm_id: key,
                 name: name,
+                name_normalized: name.normalize_for_parsec,
                 country_ref: nil,
                 country_name: "DE",
                 center: {
