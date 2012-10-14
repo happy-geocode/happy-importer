@@ -23,7 +23,7 @@ module HappyImporter
 
               center = polygon.centroid
               output.puts({
-                zip: plz,
+                name: plz,
                 city: city,
                 state_name: state,
                 state_ref: nil,

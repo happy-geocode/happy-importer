@@ -9,7 +9,7 @@ module HappyImporter
       def initialize(filename)
         @filename = filename
         @nodes = nil
-        @mysql = Mysql2::Client.new(host: "localhost", username: "osm", password: "osm", database: "osm_nodes")
+        @mysql = Mysql2::Client.new(host: "192.168.173.82", username: "osm", password: "osm", database: "osm_nodes")
       end
 
       def self.check_osmosis
@@ -132,10 +132,10 @@ module HappyImporter
           puts "#{Time.new} [Extract States] Extracting the state borders from the temporary borders file"
           `osmosis --read-xml file=/tmp/osm-borders.xml --tag-filter reject-nodes --tag-filter accept-relations admin_level=4 --tag-filter accept-ways admin_level=4 --write-xml /tmp/osm-states.xml`
           puts "#{Time.new} [Extract States] Osmosis is done ... Now we parse the XML"
-          import = HappyImporter::Importer::OsmImport.new("/tmp/osm-states.xml", "state")
-          import.extract_osm
-          puts "#{Time.new} [Extract States] Done!"
         end
+        import = HappyImporter::Importer::OsmImport.new("/tmp/osm-states.xml", "state")
+        import.extract_osm(@mysql)
+        puts "#{Time.new} [Extract States] Done!"
       end
 
       def extract_cities
@@ -144,10 +144,13 @@ module HappyImporter
         else
           puts "#{Time.new} [Extract Cities] Osmosis is running to extract the city borders from the temporary borders file"
           `osmosis --read-xml file=/tmp/osm-borders.xml --tag-filter reject-nodes --tag-filter accept-relations admin_level=8 --tag-filter accept-ways admin_level=8 --write-xml /tmp/osm-cities.xml`
-          import = HappyImporter::Importer::OsmImport.new("/tmp/osm-cities.xml", "city")
-          import.extract_osm
-          puts "#{Time.new} [Extract Cities] Done!"
+          `osmosis --read-xml file=/tmp/osm-borders.xml --tag-filter reject-nodes --tag-filter accept-relations admin_level=6 --tag-filter accept-ways admin_level=6 --write-xml /tmp/osm-big-cities.xml`
         end
+        import = HappyImporter::Importer::OsmImport.new("/tmp/osm-cities.xml", "city")
+        import.extract_osm(@mysql)
+        import = HappyImporter::Importer::OsmImport.new("/tmp/osm-big-cities.xml", "city", true)
+        import.extract_osm(@mysql)
+        puts "#{Time.new} [Extract Cities] Done!"
       end
 
       # Cleanup all the shit

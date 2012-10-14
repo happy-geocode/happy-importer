@@ -46,30 +46,32 @@ module HappyImporter
         "62366"
       ]
 
-      def initialize(filename, osm_type)
+      def initialize(filename, osm_type, check_for_city = false)
         @filename = filename
         @osm_type = osm_type
+        @check_for_city = check_for_city
       end
 
-      def extract_osm(nodes = {})
+      def extract_osm(mysql)
         doc = Document::OsmBordersDocument.new
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
         parser.parse File.open(@filename, 'r')
-        File.open("#{@osm_type}.json", "w") do |output|
+        File.open("#{@osm_type}#{@check_for_city ? "_big" : ""}.json", "w") do |output|
           doc.relations.each do |key, relation|
             name = name_from_relation(relation[:tags])
             poly = Polygon.new
             unless relation[:ways].nil?
               relation[:ways].each do |way|
-                poly.points += points_from_way doc.ways[way], nodes
+                poly.points += points_from_way doc.ways[way], mysql
               end
             end
 
             if @osm_type == "city"
               center = poly.centroid
               state_name = state_for_regionalschluessel(relation[:tags]["de:regionalschluessel"])
-              if !state_name.nil? && !poly.points.empty?
+              if !state_name.nil? && !poly.points.empty? && (!@check_for_city || relation[:tags]["de:place"] == "city")
                 entry = {
+                  id: key,
                   name: name,
                   name_normalized: name.normalize_for_parsec,
                   country_ref: nil,
@@ -84,10 +86,10 @@ module HappyImporter
                 }
                 output.puts(entry.to_json)
               end
-            elsif @osm_type == "state" && BUNDESLAENDER.include?(name)
+            elsif @osm_type == "state" && BUNDESLAENDER.include?(name) && !poly.points.empty?
               center = poly.centroid
               entry = {
-                osm_id: key,
+                id: key,
                 name: name,
                 name_normalized: name.normalize_for_parsec,
                 country_ref: nil,
@@ -108,20 +110,20 @@ module HappyImporter
         tags["nat_name:de"] || tags["name:de"] || tags["nat_name"] || tags["name"]
       end
 
-      def points_from_way(way, nodes)
+      def points_from_way(way, mysql)
         return [] if way.nil?
         points = []
 
-        if nodes.empty?
+        if mysql.nil?
           # Dummy Daten
           points << OpenStruct.new(lat: 0, lon: 0)
           points << OpenStruct.new(lat: 0, lon: 1)
           points << OpenStruct.new(lat: 1, lon: 1)
         else
           # Hier aus einem ND ref ein Lat/lon holen
-          way[:points].each do |nd_ref|
-            point = nodes[nd_ref]
-            points << OpenStruct.new(lat: point[:lat], lon:point[:lon]) if point
+          result = mysql.query("SELECT lat, lon FROM nodes WHERE id in (#{way[:points].join(", ")})")
+          result.each do |line|
+            points << OpenStruct.new(lat: line["lat"], lon: line["lon"])
           end
         end
 

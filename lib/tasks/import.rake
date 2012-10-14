@@ -11,7 +11,10 @@ namespace :import do
       puts "=============================== Extraction of #{file}"
       import = HappyImporter::Importer::OsmosisImport.new(file)
       import.extract_nodes
-      import.extract_streets
+      import.extract_borders
+      #import.extract_streets
+      #import.extract_states
+      import.extract_cities
     end
   end
 

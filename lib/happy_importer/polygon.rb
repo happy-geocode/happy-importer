@@ -13,29 +13,35 @@ class Polygon
   end
 
   def area
-    j = @points.length
+    upoints = unique_points
+    j = upoints.length
     n = j
     area = 0
-    @points.each_with_index do |p, i|
+    upoints.each_with_index do |p, i|
       j = (i + 1) % n
-      area += p.lat * @points[j].lon
-      area -= @points[j].lat * p.lon
+      area += p.lat * upoints[j].lon
+      area -= upoints[j].lat * p.lon
     end
     area /= 2.0
   end
 
   # centroid / center of mass
   def centroid
+    upoints = unique_points
+    if upoints.length <= 2
+      return @points.first
+    end
+
     cx = 0.0
     cy = 0.0
-    j = @points.length
+    j = upoints.length
     n = j
     factor = 0.0
-    @points.each_with_index() do |p, i|
+    upoints.each_with_index() do |p, i|
       j = (i + 1) % n
-      factor = p.lat * @points[j].lon - @points[j].lat * p.lon
-      cx += (p.lat + @points[j].lat) * factor
-      cy += (p.lon + @points[j].lon) * factor
+      factor = p.lat * upoints[j].lon - upoints[j].lat * p.lon
+      cx += (p.lat + upoints[j].lat) * factor
+      cy += (p.lon + upoints[j].lon) * factor
     end
 
     factor = 1 / (area * 6.0)
@@ -45,8 +51,16 @@ class Polygon
   end
 
   def radius
+    uniqpoints = unique_points
+    if uniqpoints.length <= 2
+      return 500
+    end
     center = centroid
-    @points.map{|point| distance(point, center)}.sort.last
+    uniqpoints.map{|point| distance(point, center)}.sort.last
+  end
+
+  def unique_points
+    @points.uniq{|p| "#{p.lat}-#{p.lon}"}
   end
 
   # This Code can be found here:
