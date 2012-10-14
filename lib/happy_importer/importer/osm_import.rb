@@ -56,7 +56,7 @@ module HappyImporter
         doc = Document::OsmBordersDocument.new
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
         parser.parse File.open(@filename, 'r')
-        File.open("#{@osm_type}#{@check_for_city ? "_big" : ""}.json", "w") do |output|
+        File.open("/tmp/import-#{@osm_type}#{@check_for_city ? "_big" : ""}.json", "w") do |output|
           doc.relations.each do |key, relation|
             name = name_from_relation(relation[:tags])
             poly = Polygon.new
