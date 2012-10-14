@@ -18,9 +18,13 @@ module HappyImporter
         end
       end
 
-      # This function extracts the nodes from the OSM XML file and stores them in the sqlite database
+      # This function extracts the nodes from the OSM XML file and stores them away temporarily ...
+      # We need the nodes to get the geocordinates of almost everything. Since Osmosis doesn't offer a way to
+      # filter out all unneccessary nodes we have to go with all of them and just select what we need.
+      #
+      # This is sort of ugly ... But only the way how to transpose this...
       def extract_nodes
-        # Shell out to osmosis to extract the nodes and store them in the sqlite
+        # Shell out to osmosis to extract the nodes
         if File.exist?('/tmp/osm-nodes.xml')
           puts "#{Time.new} [Extract Nodes] We already have the node extraction ... Skipping"
         else
@@ -28,13 +32,9 @@ module HappyImporter
           `osmosis --read-xml file="#{@filename}" --tag-filter reject-ways --tag-filter reject-relations --write-xml /tmp/osm-nodes.xml`
         end
 
-        # puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into a CSV file ... Please stand by (this might take a while)"
-        # f = File.open('/tmp/temp-nodes.csv', 'w')
-        # parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocumentCsv.new(f))
-        # parser.parse File.open('/tmp/osm-nodes.xml', 'r')
-        # f.close
-
-        puts "#{Time.new} [Extract Nodes] Everything should be in the database by now ..."
+        # For a small amount of data, we can store everything in memory and just access a shared hash.
+        # When we go any larger than a city OSM file, it no longer works on a standard machine, so we have
+        # go other routes
 
         # puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into memory"
         # doc = Document::NodeDocument.new
@@ -42,14 +42,24 @@ module HappyImporter
         # parser.parse File.open('/tmp/osm-nodes.xml', 'r')
         # @nodes = doc.nodes
 
-        #puts "#{Time.new} [Extract Nodes] Pushing all the stuff into the ArangoDB"
-        # echo 'db._create("locations", { journalSize: 200000000 })'|arangosh
-        # arangoimp --collection locations --create-collection true --connect-timeout 60 --log.level debug --max-upload-size 1000000 --type csv --separator ';' rails-nodes.csv
+        # ArangoDB will introduce Batch Insert Queries with version 1.1.0
+        # http://www.arangodb.org/2012/10/07/feature-preview-batch-request-api-in-arangodb-1-1
 
-        # Create the index
+        # Until then we have to rely on a CSV export and arangoimp to import the data
+
+        # Store everything into a CSV file
+        puts "#{Time.new} [Extract Nodes] Now we are parsing the XML and putting everything into a CSV file ... Please stand by (this might take a while)"
+        f = File.open('/tmp/temp-nodes.csv', 'w')
+        parser = ::Nokogiri::XML::SAX::Parser.new(Document::NodeDocumentCsv.new(f))
+        parser.parse File.open('/tmp/osm-nodes.xml', 'r')
+        f.close
+
+        puts "#{Time.new} [Extract Nodes] Importing all the stuff into the ArangoDB"
+        # We need to increase the journal size (standard ~30mb) otherwise the machine will break when importing Germany
+        `echo 'db._create("locations", { journalSize: 200000000 })'|arangosh`
+        `arangoimp --collection locations --create-collection true --connect-timeout 60 --log.level debug --max-upload-size 1000000 --type csv --separator ';' /tmp/temp-nodes.csv`
 
         puts "#{Time.new} [Extract Nodes] We are done ... Now we can use arango to get the nodes"
-
       end
 
       def extract_streets
@@ -57,7 +67,7 @@ module HappyImporter
           puts "#{Time.new} [Extract Streets] We already have the streets ... Skipping"
          else
            puts "#{Time.new} [Extract Streets] Osmosis is running to extract the streets"
-           `osmosis --read-xml file="#{filename}" --tag-filter reject-nodes --way-key keyList=highway --tag-filter accept-ways name="*" --tag-filter reject-relations --write-xml /tmp/osm-streets.xml`
+           `osmosis --read-xml file="#{@filename}" --tag-filter reject-nodes --way-key keyList=highway --tag-filter accept-ways name="*" --tag-filter reject-relations --write-xml /tmp/osm-streets.xml`
          end
 
         puts "#{Time.new} [Extract Streets] The parser is starting to parse the streets"
@@ -86,7 +96,9 @@ module HappyImporter
 
         puts "#{Time.new} [Extract Streets] Done with the connection ... Saving to /tmp/osm-streets.json"
         File.open('/tmp/osm-streets.json','w') do |f|
-          f.puts (doc.streets.to_json)
+          doc.streets.values.each do |street|
+            f.puts street.to_json
+          end
         end
         puts "#{Time.new} [Extract Streets] Done!"
       end
