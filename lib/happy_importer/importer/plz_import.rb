@@ -17,8 +17,8 @@ module HappyImporter
               state = bundesland_for_plz(match[1])
 
               polygon = Polygon.new
-              match[3].scan(/(\d*\.\d*),(\d*\.\d*)/) do |lat, long|
-                polygon.points << OpenStruct.new(lat: lat.to_f, long: long.to_f)
+              match[3].scan(/(\d*\.\d*),(\d*\.\d*)/) do |lat, lon|
+                polygon.points << OpenStruct.new(lat: lat.to_f, lon: lon.to_f)
               end
 
               center = polygon.centroid
@@ -30,7 +30,7 @@ module HappyImporter
                 country: "DE",
                 center: {
                   lat: center.lat,
-                  long: center.long
+                  lon: center.lon
                 },
                 radius: polygon.radius
               }.to_json)

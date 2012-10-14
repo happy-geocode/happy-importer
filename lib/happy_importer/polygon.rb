@@ -18,8 +18,8 @@ class Polygon
     area = 0
     @points.each_with_index do |p, i|
       j = (i + 1) % n
-      area += p.lat * @points[j].long
-      area -= @points[j].lat * p.long
+      area += p.lat * @points[j].lon
+      area -= @points[j].lat * p.lon
     end
     area /= 2.0
   end
@@ -33,15 +33,15 @@ class Polygon
     factor = 0.0
     @points.each_with_index() do |p, i|
       j = (i + 1) % n
-      factor = p.lat * @points[j].long - @points[j].lat * p.long
+      factor = p.lat * @points[j].lon - @points[j].lat * p.lon
       cx += (p.lat + @points[j].lat) * factor
-      cy += (p.long + @points[j].long) * factor
+      cy += (p.lon + @points[j].lon) * factor
     end
 
     factor = 1 / (area * 6.0)
     cx *= factor
     cy *= factor
-    OpenStruct.new(lat: cx, long:cy)
+    OpenStruct.new(lat: cx, lon:cy)
   end
 
   def radius
@@ -59,7 +59,7 @@ class Polygon
     while (i += 1) < @points.size
       a_point_on_polygon = @points[i]
       trailing_point_on_polygon = @points[j]
-      if point_is_between_the_longs_of_the_line_segment?(point, a_point_on_polygon, trailing_point_on_polygon)
+      if point_is_between_the_lons_of_the_line_segment?(point, a_point_on_polygon, trailing_point_on_polygon)
         if ray_crosses_through_line_segment?(point, a_point_on_polygon, trailing_point_on_polygon)
           contains_point = !contains_point
         end
@@ -71,31 +71,31 @@ class Polygon
 
   def outside_bounding_box?(point)
     min, max = bounding_box
-    point.lat < min.lat || point.lat > max.lat || point.long < min.long || point.long > max.long
+    point.lat < min.lat || point.lat > max.lat || point.lon < min.lon || point.lon > max.lon
   end
 
   def bounding_box
-    upper_left  = OpenStruct.new(lat: nil, long: nil)
-    lower_right = OpenStruct.new(lat: nil, long: nil)
+    upper_left  = OpenStruct.new(lat: nil, lon: nil)
+    lower_right = OpenStruct.new(lat: nil, lon: nil)
     @points.each do |point|
       upper_left.lat  = point.lat  if upper_left.lat   == nil || upper_left.lat   > point.lat
-      upper_left.long = point.long if upper_left.long  == nil || upper_left.long  > point.long
+      upper_left.lon = point.lon if upper_left.lon  == nil || upper_left.lon  > point.lon
       lower_right.lat = point.lat  if lower_right.lat  == nil || lower_right.lat  < point.lat
-      lower_right.long= point.long if lower_right.long == nil || lower_right.long < point.long
+      lower_right.lon= point.lon if lower_right.lon == nil || lower_right.lon < point.lon
     end
     [upper_left, lower_right]
   end
 
   private
 
-  def point_is_between_the_longs_of_the_line_segment?(point, a_point_on_polygon, trailing_point_on_polygon)
-    (a_point_on_polygon.long <= point.long && point.long < trailing_point_on_polygon.long) ||
-      (trailing_point_on_polygon.long <= point.long && point.long < a_point_on_polygon.long)
+  def point_is_between_the_lons_of_the_line_segment?(point, a_point_on_polygon, trailing_point_on_polygon)
+    (a_point_on_polygon.lon <= point.lon && point.lon < trailing_point_on_polygon.lon) ||
+      (trailing_point_on_polygon.lon <= point.lon && point.lon < a_point_on_polygon.lon)
   end
 
   def ray_crosses_through_line_segment?(point, a_point_on_polygon, trailing_point_on_polygon)
-    (point.lat < (trailing_point_on_polygon.lat - a_point_on_polygon.lat) * (point.long - a_point_on_polygon.long) /
-     (trailing_point_on_polygon.long - a_point_on_polygon.long) + a_point_on_polygon.lat)
+    (point.lat < (trailing_point_on_polygon.lat - a_point_on_polygon.lat) * (point.lon - a_point_on_polygon.lon) /
+     (trailing_point_on_polygon.lon - a_point_on_polygon.lon) + a_point_on_polygon.lat)
   end
 
   def distance(point1, point2)
@@ -105,7 +105,7 @@ class Polygon
 
     # compute deltas
     dlat = point2.lat - point1.lat
-    dlon = point2.long- point1.long
+    dlon = point2.lon- point1.lon
 
     a = (Math.sin(dlat / 2))**2 + Math.cos(point1.lat) *
       (Math.sin(dlon / 2))**2 * Math.cos(point2.lat)
@@ -114,7 +114,7 @@ class Polygon
   end
 
   def to_radians(point)
-    OpenStruct.new(lat: point.lat * (Math::PI / 180), long: point.long * (Math::PI / 180))
+    OpenStruct.new(lat: point.lat * (Math::PI / 180), lon: point.lon * (Math::PI / 180))
   end
 
 end
