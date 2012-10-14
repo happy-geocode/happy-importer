@@ -1,5 +1,9 @@
 module HappyImporter
   module Document
+
+    # This class is used to export a node document into a CSV file by the form:
+    # ID; LATITUDE; LONGITUDE
+    # This file can be imported to ArangoDB using arangoimp
     class NodeDocumentCsv < Nokogiri::XML::SAX::Document
 
       def initialize(file)
@@ -16,10 +20,6 @@ module HappyImporter
             @node_count += 1
             puts @node_count if @node_count % 1_000_000 == 0
         end
-      end
-
-      def end_element name
-        #puts "#{name} ended"
       end
     end
   end

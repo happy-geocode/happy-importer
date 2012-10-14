@@ -1,5 +1,8 @@
 module HappyImporter
   module Document
+
+    # This file is used to import the nodes into a hash. This can be used for small files (like loading
+    # OSM data for only one city). When the nodelist is bigger than ~500MiB, please use the CSV & Arango workflow
     class NodeDocument < Nokogiri::XML::SAX::Document
 
       attr_reader :nodes
@@ -17,10 +20,6 @@ module HappyImporter
             @node_count += 1
             puts "#{Time.new} [Reading nodes to memory] #{@node_count}" if @node_count % 1000000 == 0
         end
-      end
-
-      def end_element name
-        #puts "#{name} ended"
       end
     end
   end

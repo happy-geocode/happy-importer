@@ -1,6 +1,10 @@
 module HappyImporter
   module Document
+    # This SAX file parser is used to extract border information from OSM, it can be used to get the boundaries
+    # of a city, state, country, etc ...
     class OsmBordersDocument < Nokogiri::XML::SAX::Document
+
+      attr_reader :ways, :relations
 
       def initialize
         @relations = {}
@@ -36,18 +40,6 @@ module HappyImporter
               @current_node[:tags][attributes["k"]] = attributes["v"]
             end
         end
-      end
-
-      def end_element name
-        #puts "#{name} ended"
-      end
-
-      def ways
-        @ways
-      end
-
-      def relations
-        @relations
       end
     end
   end
