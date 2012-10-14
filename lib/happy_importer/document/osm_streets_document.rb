@@ -17,9 +17,9 @@ module HappyImporter
         case name
           when 'way'
             @current_street = attributes['id']
-            @streets[@current_street] = { points: [], name: nil, name_normalized: nil, other_part_refs: [] }
+            @streets[@current_street] = { id: @current_street, points: [], name: nil, name_normalized: nil, other_part_refs: [] }
           when 'nd'
-            result = mysql.query("SELECT lat, lon FROM nodes WHERE id='#{attributes['ref']}'").first
+            result = @mysql.query("SELECT lat, lon FROM nodes WHERE id='#{attributes['ref']}'").first
             @streets[@current_street][:points] << { lat: result['lat'], lon: result['lon'] }
 
             @nodes[attributes['ref']] ||= []
@@ -28,7 +28,7 @@ module HappyImporter
           when 'tag'
             if attributes['k'] == 'name'
               @streets[@current_street][:name] = attributes['v']
-              @streets[@current_street][:name] = attributes['v'].normalize_for_parsec
+              @streets[@current_street][:name_normalized] = attributes['v'].normalize_for_parsec
             end
         end
       end
