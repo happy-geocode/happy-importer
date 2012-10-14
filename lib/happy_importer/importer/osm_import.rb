@@ -6,6 +6,8 @@ module HappyImporter
       # Don't change the order of this,
       # it is important. It is the order
       # of the "REGIONALSCHLUESSEL"
+      # See this for details:
+      # http://de.wikipedia.org/wiki/Amtlicher_Gemeindeschl%C3%BCssel#L.C3.A4nder_der_Bundesrepublik_Deutschland
       BUNDESLAENDER = [
         "Schleswig-Holstein",
         "Hamburg",
@@ -34,45 +36,47 @@ module HappyImporter
         doc = Document::OsmBordersDocument.new
         parser = ::Nokogiri::XML::SAX::Parser.new(doc)
         parser.parse File.open(@filename, 'r')
-        doc.relations.values.each do |relation|
-          name = name_from_relation(relation[:tags])
-          #p name
-          poly = Polygon.new
-          unless relation[:ways].nil?
-            relation[:ways].each do |way|
-              poly.points += points_from_way doc.ways[way]
+        File.open("#{@osm_type}.json", "w") do |output|
+          doc.relations.values.each do |relation|
+            name = name_from_relation(relation[:tags])
+            poly = Polygon.new
+            unless relation[:ways].nil?
+              relation[:ways].each do |way|
+                poly.points += points_from_way doc.ways[way]
+              end
+            end
+
+            if @osm_type == "city"
+              center = poly.centroid
+              entry = {
+                name: name,
+                country_ref: nil,
+                country_name: "DE",
+                state_name: state_for_regionalschluessel(relation[:tags]["de:regionalschluessel"]),
+                state_ref: nil,
+                center: {
+                  lat: center.lat,
+                  long: center.long
+                },
+                radius: poly.radius
+              }
+              output.puts(entry.to_json) unless entry[:state_name].nil?
+            elsif @osm_type == "state" && BUNDESLAENDER.include?(name)
+              center = poly.centroid
+              entry = {
+                name: name,
+                country_ref: nil,
+                country_name: "DE",
+                center: {
+                  lat: center.lat,
+                  long: center.long
+                },
+                radius: poly.radius
+              }
+              output.puts(entry.to_json)
             end
           end
-
-          if @osm_type == "city"
-            entry = {
-              name: name,
-              country_ref: nil,
-              country_name: "DE",
-              state_name: state_for_regionalschluessel(relation[:tags]["de:regionalschluessel"]),
-              state_ref: nil,
-              center: {
-                lat: nil,
-                long: nil
-              },
-              radius: nil
-            }
-            p entry.inspect unless entry[:state_name].nil?
-          elsif @osm_type == "state" && BUNDESLAENDER.include?(name)
-            entry = {
-              name: name,
-              country_ref: nil,
-              country_name: "DE",
-              center: {
-                lat: nil,
-                long: nil
-              },
-              radius: nil
-            }
-            p entry.inspect
-          end
         end
-        #p doc.relations.values.count
       end
 
       def name_from_relation(tags)
@@ -81,7 +85,19 @@ module HappyImporter
 
       def points_from_way(way)
         return [] if way.nil?
-        []
+        points = []
+
+        # Dummy Daten
+        points << OpenStruct.new(lat: 0, long: 0)
+        points << OpenStruct.new(lat: 0, long: 1)
+        points << OpenStruct.new(lat: 1, long: 1)
+
+        # Hier aus einem ND ref ein Lat/Long holen
+        #way[:points].each do |nd_ref|
+          #points << OpenStruct.new(lat: 0, long:0)
+        #end
+
+        points
       end
 
       def state_for_regionalschluessel(schluessel)
